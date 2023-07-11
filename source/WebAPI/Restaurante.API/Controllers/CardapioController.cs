@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Dapper;
+using Microsoft.AspNetCore.Mvc;
 using Restaurante.API.Domain;
+using System.Data.SqlClient;
 
 namespace Restaurante.API.Controllers
 {
@@ -7,21 +9,45 @@ namespace Restaurante.API.Controllers
     [Route("")]
     public class CardapioController : ControllerBase
     {
-        [HttpGet("Cardapios")]
-        public List<Cardapio> Get()
+        private readonly IConfiguration _configuration;
+
+        public CardapioController(IConfiguration configuration)
         {
-            var listaCardapios = new List<Cardapio>();
+            _configuration = configuration;
+        }
 
-            var cardapio = new Cardapio();
-
-            cardapio.CardapioId = 1;
-            cardapio.Nome = "Pizza";
-            cardapio.Preço = 2;
-            cardapio.Ingredientes = "Queijo e Azeitona";
-
-            listaCardapios.Add(cardapio);
+        [HttpGet("Cardapios")]
+        public Task<List<Cardapio>> Get()
+        {
+            var listaCardapios = ObterCardapios();
 
             return listaCardapios;
+        }
+
+        [HttpGet("Cardapios/{id}")]
+        public async Task<Cardapio> GetById(int id)
+        {
+            var cardapio = await ObterCardapioPorId(id);
+            return cardapio;
+        }
+
+        private async Task<List<Cardapio>> ObterCardapios() 
+        {
+            using var connection = new SqlConnection(_configuration["ConnectionStrings:DBRestaurante"]);
+            var result = await connection.QueryAsync<Cardapio>("Select * From Cardapio");
+            var cardapios = result.ToList();
+
+            return cardapios;
+        }
+        
+        private async Task<Cardapio> ObterCardapioPorId(int id)
+        {
+            using var connection = new SqlConnection(_configuration["ConnectionStrings:DBRestaurante"]);
+            var parametro = new DynamicParameters();
+            parametro.Add("@CardapioId", id);
+            var result = await connection.QueryFirstOrDefaultAsync<Cardapio>("Select * From Cardapio where CardapioId = @CardapioId", parametro);
+            
+            return result;
         }
     }
 }

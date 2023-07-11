@@ -1,4 +1,6 @@
-﻿namespace Restaurante.API.Domain
+﻿using System.Data.SqlClient;
+
+namespace Restaurante.API.Domain
 {
     public class Cardapio
     {
